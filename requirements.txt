@@ -8,7 +8,6 @@ langsmith>=0.1.0
 
 # Database and ORM
 sqlalchemy>=2.0.0
-sqlite3
 requests>=2.28.0
 
 # Data processing and validation
@@ -35,12 +34,3 @@ black>=23.0.0
 flake8>=6.0.0
 mypy>=1.0.0
 pre-commit>=3.0.0
-
-# Optional dependencies for extended functionality
-# Uncomment as needed:
-# redis>=4.5.0          # For Redis-based memory store
-# psycopg2-binary>=2.9.0 # For PostgreSQL memory store
-# streamlit>=1.28.0      # For web UI demos
-# gradio>=3.50.0         # Alternative web UI
-# fastapi>=0.100.0       # For API deployments
-# uvicorn>=0.23.0        # ASGI server for FastAPI 
