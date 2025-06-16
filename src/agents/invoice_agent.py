@@ -1,12 +1,11 @@
 """Invoice information agent for handling billing and invoice queries."""
 
-from ..base_agent import BaseAgent
-from ...schemas.state import State
-from ...config.prompts import SystemPrompts
-from ...tools import get_invoice_tools
+from ..schemas.state import State
+from ..config.prompts import SystemPrompts
+from ..tools import get_invoice_tools
 
 
-class InvoiceAgent(BaseAgent):
+class InvoiceAgent:
     """
     Invoice information agent that handles customer billing and invoice queries.
 
@@ -22,12 +21,10 @@ class InvoiceAgent(BaseAgent):
             llm: Language model instance
             tools: List of invoice-related tools (defaults to INVOICE_TOOLS)
         """
-        super().__init__(
-            name="invoice_information_agent",
-            description="Handles invoice and billing information queries",
-            llm=llm,
-            tools=tools or get_invoice_tools(),
-        )
+        self.name = "invoice_agent"
+        self.description = "Handles invoice and billing information queries"
+        self.llm = llm
+        self.tools = tools or get_invoice_tools()
         self.invoice_agent = self._create_react_agent()
 
     def _create_react_agent(self):
@@ -43,9 +40,9 @@ class InvoiceAgent(BaseAgent):
         from langgraph.prebuilt import create_react_agent
 
         return create_react_agent(
-            llm=self.llm,
+            model=self.llm,
             tools=self.tools,
-            name=self.name,
             prompt=SystemPrompts.invoice_assistant_prompt(),
             state_schema=State,
+            name=self.name,
         )

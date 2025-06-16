@@ -1,8 +1,7 @@
 """Agent implementations for the multi-agent system."""
 
-from .base_agent import BaseAgent
-from .agents.supervisor_agent import SupervisorAgent
-from .agents.music_agent import MusicAgent
-from .agents.invoice_agent import InvoiceAgent
+from .supervisor_agent import SupervisorAgent
+from .music_agent import MusicAgent
+from .invoice_agent import InvoiceAgent
 
-__all__ = ["BaseAgent", "SupervisorAgent", "MusicAgent", "InvoiceAgent"]
+__all__ = ["SupervisorAgent", "MusicAgent", "InvoiceAgent"]

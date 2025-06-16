@@ -1,14 +1,12 @@
 from src.schemas.state import State
 from langchain_core.messages import SystemMessage
 from src.utils.database import get_customer_id_from_identifier
+from langchain_core.runnables import RunnableConfig
 
 
 def verify_info_node(
     state: State,
-    llm,
-    structured_llm,
-    structured_system_prompt,
-    system_instructions,
+    config: RunnableConfig,
 ):
     """
     Verify the customer's account by parsing their input and matching it with the database.
@@ -38,8 +36,8 @@ def verify_info_node(
         user_input = state["messages"][-1]
 
         # Use structured LLM to parse customer identifier from the message
-        parsed_info = structured_llm.invoke(
-            [SystemMessage(content=structured_system_prompt)] + [user_input]
+        parsed_info = config["configurable"]["structured_llm"].invoke(
+            [SystemMessage(content=system_instructions)] + [user_input]
         )
 
         # Extract the identifier from parsed response
@@ -59,6 +57,7 @@ def verify_info_node(
             )
             return {"customer_id": customer_id, "messages": [intent_message]}
         else:
+            llm = config["configurable"]["llm"]
             # If customer not found, ask for correct information
             response = llm.invoke(
                 [SystemMessage(content=system_instructions)] + state["messages"]

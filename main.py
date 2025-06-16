@@ -5,21 +5,20 @@ import uuid
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 
-# Load environment variables
-load_dotenv()
-
 # Import the template components
-from src.workflows.multi_agent_supervisor_workflow import (
-    MultiAgentSupervisorWorkflow,
-)
+from src.workflows import MultiAgentWorkflow
 from src.config.settings import Settings
 
 
-def main():
-    """Run a basic example of the multi-agent system."""
+# Load environment variables
+load_dotenv(dotenv_path=".env", override=True)
 
-    print("Multi-Agent LangGraph Template - Basic Example")
-    print("=" * 50)
+
+def main():
+    """Main function to run the multi-agent system."""
+
+    print("Multi-Agent LangGraph Execution")
+    print("=" * 60)
 
     # Initialize settings
     settings = Settings()
@@ -28,8 +27,8 @@ def main():
 
     # Create the multi-agent system
     print("\nCreating multi-agent workflow...")
-    multi_agent_supervisor_workflow = MultiAgentSupervisorWorkflow(settings)
-    workflow = multi_agent_supervisor_workflow.create_complete_workflow()
+    multi_agent_workflow = MultiAgentWorkflow(settings)
+    workflow = multi_agent_workflow.create_complete_workflow()
 
     # Example conversation
     initial_message = HumanMessage(
@@ -40,30 +39,33 @@ def main():
     thread_id = uuid.uuid4()
 
     # Configuration for the conversation
-    config = {"configurable": {"thread_id": thread_id, "user_id": "demo_user"}}
+    config = {
+        "configurable": {
+            "thread_id": thread_id,
+            "user_id": "Deepak",
+            "llm": multi_agent_workflow.llm,
+            "structured_llm": multi_agent_workflow.structured_llm,
+        }
+    }
 
     print("\nStarting conversation...")
     print(f"User: {initial_message.content}")
 
-    try:
-        # Execute the workflow
-        result = workflow.invoke({"messages": [initial_message]}, config=config)
+    # Execute the workflow
+    result = workflow.invoke({"messages": [initial_message]}, config=config)
 
-        print("\n Assistant Response:")
-        if result.get("messages"):
-            for msg in result["messages"]:
-                if hasattr(msg, "content"):
-                    print(f"  {msg.content}")
-                    msg.pretty_print()
-                else:
-                    print(f"  {msg}")
+    print("\n Assistant Response:")
+    if result.get("messages"):
+        for msg in result["messages"]:
+            if hasattr(msg, "content"):
+                print(f"  {msg.content}")
+                msg.pretty_print()
+            else:
+                print(f"  {msg}")
 
-        print(f"\nCustomer ID: {result.get('customer_id', 'Not verified')}")
-        print(f"Loaded Memory: {result.get('loaded_memory', 'None')}")
-
-    except Exception as e:
-        print(f"\nError: {e}")
-        print("Make sure you have set up your environment variables correctly.")
+    print(f"\nCustomer ID: {result.get('customer_id', 'Not verified')}")
+    print(f"Loaded Memory: {result.get('loaded_memory', 'None')}")
+    print(f"Final Response: {result.get('final_response', 'None')}")
 
 
 if __name__ == "__main__":
@@ -80,20 +82,5 @@ if __name__ == "__main__":
         print("OPENAI_API_KEY=your_api_key_here")
         exit(1)
 
-    try:
-        # Run examples
-        main()
-
-        print("\n" + "=" * 60)
-        print("All examples completed successfully!")
-        print("Next steps:")
-        print("  1. Modify the agents in src/agents/")
-        print("  2. Add new tools in src/tools/")
-        print("  3. Customize workflows in src/workflows/")
-        print("  4. Update configuration in src/config/")
-
-    except KeyboardInterrupt:
-        print("\n\nExamples interrupted by user.")
-    except Exception as e:
-        print(f"\n\nUnexpected error: {e}")
-        print("Please check your configuration and try again.")
+    # Run examples
+    main()

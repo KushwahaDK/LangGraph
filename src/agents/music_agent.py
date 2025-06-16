@@ -1,12 +1,11 @@
 """Music catalog agent for handling music-related queries."""
 
-from ..base_agent import BaseAgent
-from ...schemas.state import State
-from ...config.prompts import SystemPrompts
-from ...tools import get_music_tools
+from ..schemas.state import State
+from ..config.prompts import SystemPrompts
+from ..tools import get_music_tools
 
 
-class MusicAgent(BaseAgent):
+class MusicAgent:
     """
     Music catalog information agent that handles music-related queries.
 
@@ -22,12 +21,10 @@ class MusicAgent(BaseAgent):
             llm: Language model instance
             tools: List of music-related tools (defaults to MUSIC_TOOLS)
         """
-        super().__init__(
-            name="music_catalog_agent",
-            description="Handles music catalog queries and recommendations",
-            llm=llm,
-            tools=tools or get_music_tools(),
-        )
+        self.name = "music_agent"
+        self.description = "Handles music catalog queries and recommendations"
+        self.llm = llm
+        self.tools = tools or get_music_tools()
         self.music_agent = self._create_react_agent()
 
     def _create_react_agent(self):
@@ -37,9 +34,9 @@ class MusicAgent(BaseAgent):
         from langgraph.prebuilt import create_react_agent
 
         return create_react_agent(
-            llm=self.llm,
+            model=self.llm,
             tools=self.tools,
-            name=self.name,
-            state_schema=State,
             prompt=SystemPrompts.music_assistant_prompt(),
+            state_schema=State,
+            name=self.name,
         )

@@ -4,9 +4,7 @@ from typing import Optional
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, START, END
 
-from ..agents.agents.supervisor_agent import SupervisorAgent
-from ..agents.agents.music_agent import MusicAgent
-from ..agents.agents.invoice_agent import InvoiceAgent
+from ..agents import MusicAgent, InvoiceAgent, SupervisorAgent
 from ..schemas.state import State
 from ..schemas.models import UserInput
 from ..config.settings import Settings
@@ -19,7 +17,7 @@ from ..nodes.human_input_node import human_input_node
 from ..tools import get_music_tools, get_invoice_tools
 
 
-class MultiAgentSupervisorWorkflow:
+class MultiAgentWorkflow:
     """
     Complete multi-agent workflow implementing the supervisor pattern with:
     - Customer verification
@@ -42,7 +40,11 @@ class MultiAgentSupervisorWorkflow:
             memory_manager: Memory manager instance
         """
         self.settings = settings
-        self.memory_manager = memory_manager
+
+        if memory_manager:
+            self.memory_manager = memory_manager
+        else:
+            self.memory_manager = MemoryManager()
 
         # Initialize database
         self.db = setup_database()
@@ -53,15 +55,19 @@ class MultiAgentSupervisorWorkflow:
     def _initialize_components(self):
         """Initialize LLM, agents, and other components."""
         # Initialize LLM
-        self.llm = ChatOpenAI(
-            model_name=self.settings.model_name, temperature=self.settings.temperature
-        )
+        self._initialize_llm()
 
         # Initialize structured LLM for parsing
         self.structured_llm = self.llm.with_structured_output(schema=UserInput)
 
         # Initialize agents with appropriate tools
         self._initialize_agents()
+
+    def _initialize_llm(self):
+        """Initialize the LLM."""
+        self.llm = ChatOpenAI(
+            model_name=self.settings.model_name, temperature=self.settings.temperature
+        )
 
     def _initialize_agents(self):
         """Initialize all agents used in the workflow."""

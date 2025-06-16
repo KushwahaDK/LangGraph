@@ -1,6 +1,6 @@
 """Multi-Agent LangGraph Template
 
-A modular, extensible template for building multi-agent AI systems using LangGraph and LangSmith.
+A modular, extensible template for building multi-agent AI systems using LangGraph.
 """
 
 __version__ = "1.0.0"
