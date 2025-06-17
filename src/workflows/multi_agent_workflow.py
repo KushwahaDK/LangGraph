@@ -115,7 +115,7 @@ class MultiAgentWorkflow:
         workflow.add_edge("supervisor", "create_memory")
         workflow.add_edge("create_memory", END)
 
-    def create_complete_workflow(self):
+    def build_graph(self):
         """
         Create the complete workflow with verification, memory management, and supervision.
 
@@ -125,7 +125,7 @@ class MultiAgentWorkflow:
         # Create the main workflow graph
         workflow = StateGraph(State)
 
-        # Get the compiled supervisor workflow from the supervisor agent
+        # Get the compiled supervisor workflow (Supervisor + 2 sub-agents graph) from the supervisor agent
         supervisor_workflow = self.supervisor_agent.create_supervisor_workflow()
 
         # Add nodes to the graph

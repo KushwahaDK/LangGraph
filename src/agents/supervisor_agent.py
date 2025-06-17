@@ -44,11 +44,12 @@ class SupervisorAgent:
                 self.sub_agents["invoice_agent"],
                 self.sub_agents["music_agent"],
             ],
-            output_mode="last_message",  # Return only the final response
             model=self.llm,
+            output_mode="last_message",  # Return only the final response
             prompt=SystemPrompts.supervisor_prompt(),  # System instructions for the supervisor agent
             state_schema=State,  # State schema defining data flow structure
             supervisor_name=self.name,
+            add_handoff_back_messages=True,  # Add a pair of (AIMessage, ToolMessage) to the message history
         )
 
         return supervisor_workflow.compile(
@@ -56,3 +57,10 @@ class SupervisorAgent:
             checkpointer=self.memory_manager.get_checkpointer(),
             store=self.memory_manager.get_store(),
         )
+
+    def vizualize_graph(self, workflow_name: str):
+        """Vizualize the supervisor workflow."""
+
+        from IPython.display import display, Image
+
+        display(Image(workflow_name.get_graph().draw_mermaid_png()))

@@ -28,7 +28,7 @@ def main():
     # Create the multi-agent system
     print("\nCreating multi-agent workflow...")
     multi_agent_workflow = MultiAgentWorkflow(settings)
-    workflow = multi_agent_workflow.create_complete_workflow()
+    workflow = multi_agent_workflow.build_graph()
 
     # Example conversation
     initial_message = HumanMessage(

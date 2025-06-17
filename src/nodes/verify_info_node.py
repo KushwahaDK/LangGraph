@@ -2,6 +2,7 @@ from src.schemas.state import State
 from langchain_core.messages import SystemMessage
 from src.utils.database import get_customer_id_from_identifier
 from langchain_core.runnables import RunnableConfig
+from ..config.prompts import SystemPrompts
 
 
 def verify_info_node(
@@ -24,20 +25,13 @@ def verify_info_node(
     """
     # Only verify if customer_id is not already set
     if state.get("customer_id") is None:
-        # System instructions for prompting customer verification
-        system_instructions = """You are a music store agent, where you are trying to verify the customer identity 
-        as the first step of the customer support process. 
-        Only after their account is verified, you would be able to support them on resolving the issue. 
-        In order to verify their identity, one of their customer ID, email, or phone number needs to be provided.
-        If the customer has not provided their identifier, please ask them for it.
-        If they have provided the identifier but cannot be found, please ask them to revise it."""
-
         # Get the most recent user message
         user_input = state["messages"][-1]
 
         # Use structured LLM to parse customer identifier from the message
         parsed_info = config["configurable"]["structured_llm"].invoke(
-            [SystemMessage(content=system_instructions)] + [user_input]
+            [SystemMessage(content=SystemPrompts.structured_extraction_prompt())]
+            + [user_input]
         )
 
         # Extract the identifier from parsed response
@@ -55,12 +49,14 @@ def verify_info_node(
             intent_message = SystemMessage(
                 content=f"Thank you for providing your information! I was able to verify your account with customer id {customer_id}."
             )
+            # Note that the return statements only contain keys that are part of the State schema
             return {"customer_id": customer_id, "messages": [intent_message]}
         else:
             llm = config["configurable"]["llm"]
             # If customer not found, ask for correct information
             response = llm.invoke(
-                [SystemMessage(content=system_instructions)] + state["messages"]
+                [SystemMessage(content=SystemPrompts.verification_prompt())]
+                + state["messages"]
             )
             return {"messages": [response]}
 
