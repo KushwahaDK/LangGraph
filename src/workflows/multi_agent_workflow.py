@@ -1,12 +1,14 @@
 """Complete multi-agent workflow with verification, memory management, and human-in-the-loop."""
 
 from typing import Optional
-from langchain_openai import ChatOpenAI
+from langchain_openai import AzureChatOpenAI
+
 from langgraph.graph import StateGraph, START, END
+
+from src.schemas.models import UserInput
 
 from ..agents import MusicAgent, InvoiceAgent, SupervisorAgent
 from ..schemas.state import State
-from ..schemas.models import UserInput
 from ..config.settings import Settings
 from ..memory.memory_manager import MemoryManager
 from ..utils.database import setup_database
@@ -57,17 +59,21 @@ class MultiAgentWorkflow:
         # Initialize LLM
         self._initialize_llm()
 
-        # Initialize structured LLM for parsing
-        self.structured_llm = self.llm.with_structured_output(schema=UserInput)
-
         # Initialize agents with appropriate tools
         self._initialize_agents()
 
     def _initialize_llm(self):
         """Initialize the LLM."""
-        self.llm = ChatOpenAI(
-            model_name=self.settings.model_name, temperature=self.settings.temperature
+        self.llm = AzureChatOpenAI(
+            model_name=self.settings.model_name,
+            temperature=self.settings.temperature,
+            api_version=self.settings.api_version,
+            api_key=self.settings.azure_openai_api_key,
+            azure_endpoint=self.settings.azure_openai_base_url,
         )
+
+        # Initialize structured LLM for parsing
+        self.structured_llm = self.llm.with_structured_output(schema=UserInput)
 
     def _initialize_agents(self):
         """Initialize all agents used in the workflow."""

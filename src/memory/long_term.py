@@ -1,5 +1,6 @@
 """Long-term memory implementation for user preferences and context."""
 
+from src.schemas.state import State
 from langgraph.store.memory import InMemoryStore
 from typing import Dict, Any, Optional
 
@@ -46,20 +47,31 @@ class LongTermMemory:
         key = "user_memory"
         self._store.put(namespace, key, memory_data)
 
-    def load_memory(self, user_id: str) -> Optional[Dict[str, Any]]:
+    def load_memory(self, state: State) -> dict:
         """
         Load user memory from long-term storage.
 
         Args:
-            user_id: User identifier
+            state: State containing user_id
 
         Returns:
             User memory data or None if not found
         """
+        user_id = state["user_id"]
+
+        # Create a namespace for the user's memory
         namespace = ("memory_profile", user_id)
+
+        # Get the user memory from the store
         key = "user_memory"
         result = self._store.get(namespace, key)
-        return result.value if result else None
+
+        # If memory exists and has a value, format it using our helper function.
+        if result and result.value:
+            formatted_memory = self.format_user_memory(result.value)
+
+        # Update the `loaded_memory` field in the state with the retrieved and formatted memory.
+        return {"loaded_memory": formatted_memory}
 
     def clear_memory(self, user_id: str):
         """

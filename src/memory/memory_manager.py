@@ -1,9 +1,8 @@
 """Memory manager for coordinating short-term and long-term memory."""
 
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.store.memory import InMemoryStore
 from .short_term import ShortTermMemory
 from .long_term import LongTermMemory
+from src.schemas.state import State
 
 
 class MemoryManager:
@@ -32,9 +31,9 @@ class MemoryManager:
         """Save user memory to long-term storage."""
         return self.long_term.save_memory(user_id, memory_data)
 
-    def load_user_memory(self, user_id: str) -> dict:
+    def load_user_memory(self, state: State) -> dict:
         """Load user memory from long-term storage."""
-        return self.long_term.load_memory(user_id)
+        return self.long_term.load_memory(state)
 
     def clear_conversation(self, thread_id: str):
         """Clear short-term conversation memory."""

@@ -4,6 +4,7 @@ import os
 import uuid
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
+from langgraph.types import Command
 
 # Import the template components
 from src.workflows import MultiAgentWorkflow
@@ -54,14 +55,16 @@ def main():
     # Execute the workflow
     result = workflow.invoke({"messages": [initial_message]}, config=config)
 
-    print("\n Assistant Response:")
-    if result.get("messages"):
-        for msg in result["messages"]:
-            if hasattr(msg, "content"):
-                print(f"  {msg.content}")
-                msg.pretty_print()
-            else:
-                print(f"  {msg}")
+    # Print the conversation messages to see the verification and subsequent processing.
+    for message in result["messages"]:
+        message.pretty_print()
+
+    question = "My phone number is +55 (12) 3923-5555."
+    result = workflow.invoke(Command(resume=question), config=config)
+
+    # Print the conversation messages to see the verification and subsequent processing.
+    for message in result["messages"]:
+        message.pretty_print()
 
     print(f"\nCustomer ID: {result.get('customer_id', 'Not verified')}")
     print(f"Loaded Memory: {result.get('loaded_memory', 'None')}")
@@ -75,11 +78,11 @@ if __name__ == "__main__":
     print("=" * 60)
 
     # Check if API key is set
-    if not os.getenv("OPENAI_API_KEY"):
-        print("OPENAI_API_KEY not found in environment variables.")
+    if not os.getenv("AZURE_OPENAI_API_KEY"):
+        print("AZURE_OPENAI_API_KEY not found in environment variables.")
         print("Please set your OpenAI API key before running examples.")
         print("\nCreate a .env file with:")
-        print("OPENAI_API_KEY=your_api_key_here")
+        print("AZURE_OPENAI_API_KEY=your_api_key_here")
         exit(1)
 
     # Run examples

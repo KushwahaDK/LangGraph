@@ -1,6 +1,6 @@
 from src.schemas.state import State
 from langchain_core.messages import SystemMessage
-from src.utils.database import get_customer_id_from_identifier
+from src.utils.database import get_customer_id_from_identifier, setup_database
 from langchain_core.runnables import RunnableConfig
 from ..config.prompts import SystemPrompts
 
@@ -40,9 +40,10 @@ def verify_info_node(
         # Initialize customer_id as empty
         customer_id = ""
 
+        db = setup_database()
         # Attempt to find the customer ID using the provided identifier
         if identifier:
-            customer_id = get_customer_id_from_identifier(identifier)
+            customer_id = get_customer_id_from_identifier(identifier, db)
 
         # If customer found, confirm verification and set customer_id in state
         if customer_id != "":

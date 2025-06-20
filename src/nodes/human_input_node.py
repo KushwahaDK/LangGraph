@@ -1,9 +1,10 @@
 from langgraph.types import interrupt
+from src.config.prompts import SystemPrompts
 from src.schemas.state import State
 from langchain_core.runnables import RunnableConfig
 
 
-def human_input_node(state: State, config: RunnableConfig, prompt: str):
+def human_input_node(state: State, config: RunnableConfig):
     """
     Human-in-the-loop node that interrupts the workflow to request user input.
 
@@ -19,7 +20,7 @@ def human_input_node(state: State, config: RunnableConfig, prompt: str):
         dict: Updated state with the user's input message
     """
     # Interrupt the workflow and prompt for user input
-    user_input = interrupt(prompt)
+    user_input = interrupt("Please provide input to verify your identity.")
 
     # Return the user input as a new message in the state
     return {"messages": [user_input]}
