@@ -33,7 +33,7 @@ def main():
 
     # Example conversation
     initial_message = HumanMessage(
-        content="Hi! I'm Deepak Kushwaha, I'd like to find some music recommendations."
+        content="""My customer id is 1. I Like the Rolling Stones. Can You recommend me some music.Also, I want to know the details of my invoice with the highest unit price."""
     )
 
     # Generate a unique thread ID for this conversation session
@@ -44,23 +44,16 @@ def main():
         "configurable": {
             "thread_id": thread_id,
             "user_id": "Deepak",
-            "llm": multi_agent_workflow.llm,
-            "structured_llm": multi_agent_workflow.structured_llm,
         }
     }
 
     print("\nStarting conversation...")
-    print(f"User: {initial_message.content}")
 
     # Execute the workflow
     result = workflow.invoke({"messages": [initial_message]}, config=config)
 
-    # Print the conversation messages to see the verification and subsequent processing.
-    for message in result["messages"]:
-        message.pretty_print()
-
-    question = "My phone number is +55 (12) 3923-5555."
-    result = workflow.invoke(Command(resume=question), config=config)
+    user_input = "My phone number is +55 (12) 3923-5555."
+    result = workflow.invoke(Command(resume=user_input), config=config)
 
     # Print the conversation messages to see the verification and subsequent processing.
     for message in result["messages"]:
@@ -68,13 +61,12 @@ def main():
 
     print(f"\nCustomer ID: {result.get('customer_id', 'Not verified')}")
     print(f"Loaded Memory: {result.get('loaded_memory', 'None')}")
-    print(f"Final Response: {result.get('final_response', 'None')}")
 
 
 if __name__ == "__main__":
     """Main execution function."""
 
-    print("LangGraph Multi-Agent Template Examples")
+    print("LangGraph Multi-Agent Example")
     print("=" * 60)
 
     # Check if API key is set

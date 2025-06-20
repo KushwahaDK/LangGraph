@@ -1,8 +1,9 @@
 from langchain_core.tools import tool
+from src.databases.database import db
 
 
 @tool
-def get_invoices_by_customer_sorted_by_date(db, customer_id: str) -> list[dict]:
+def get_invoices_by_customer_sorted_by_date(customer_id: str) -> list[dict]:
     """
     Look up all invoices for a customer using their ID.
     The invoices are sorted in descending order by invoice date, which helps when the customer wants to view their most recent/oldest invoice, or if
@@ -21,7 +22,7 @@ def get_invoices_by_customer_sorted_by_date(db, customer_id: str) -> list[dict]:
 
 
 @tool
-def get_invoices_sorted_by_unit_price(db, customer_id: str) -> list[dict]:
+def get_invoices_sorted_by_unit_price(customer_id: str) -> list[dict]:
     """
     Use this tool when the customer wants to know the details of one of their invoices based on the unit price/cost of the invoice.
     This tool looks up all invoices for a customer, and sorts the unit price from highest to lowest. In order to find the invoice associated with the customer,
@@ -45,7 +46,7 @@ def get_invoices_sorted_by_unit_price(db, customer_id: str) -> list[dict]:
 
 
 @tool
-def get_employee_by_invoice_and_customer(db, invoice_id: str, customer_id: str) -> dict:
+def get_employee_by_invoice_and_customer(invoice_id: str, customer_id: str) -> dict:
     """
     This tool will take in an invoice ID and a customer ID and return the employee information associated with the invoice.
 

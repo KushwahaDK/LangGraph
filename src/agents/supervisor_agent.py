@@ -49,7 +49,7 @@ class SupervisorAgent:
             prompt=SystemPrompts.supervisor_prompt(),  # System instructions for the supervisor agent
             state_schema=State,  # State schema defining data flow structure
             supervisor_name=self.name,
-            add_handoff_back_messages=True,  # Add a pair of (AIMessage, ToolMessage) to the message history
+            add_handoff_back_messages=False,  # Add a pair of (AIMessage, ToolMessage) to the message history
         )
 
         return supervisor_workflow.compile(
@@ -58,8 +58,8 @@ class SupervisorAgent:
             store=self.memory_manager.get_store(),
         )
 
-    def vizualize_graph(self, workflow_name: str):
-        """Vizualize the supervisor workflow."""
+    def visualize_graph(self, workflow_name: str):
+        """Visualize the supervisor workflow."""
 
         from IPython.display import display, Image
 

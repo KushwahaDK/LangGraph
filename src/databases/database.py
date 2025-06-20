@@ -89,3 +89,6 @@ def get_customer_id_from_identifier(identifier: str, db: SQLDatabase) -> Optiona
 
     # Return None if no match found
     return None
+
+
+db = setup_database()

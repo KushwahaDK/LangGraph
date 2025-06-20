@@ -1,22 +1,20 @@
 """Complete multi-agent workflow with verification, memory management, and human-in-the-loop."""
 
 from typing import Optional
-from langchain_openai import AzureChatOpenAI
+from langchain_core.runnables import RunnableConfig
 
 from langgraph.graph import StateGraph, START, END
 
-from src.schemas.models import UserInput
-
-from ..agents import MusicAgent, InvoiceAgent, SupervisorAgent
-from ..schemas.state import State
-from ..config.settings import Settings
-from ..memory.memory_manager import MemoryManager
-from ..utils.database import setup_database
-from ..memory.long_term import LongTermMemory
-from ..utils.validation import should_interrupt
-from ..nodes.verify_info_node import verify_info_node
-from ..nodes.human_input_node import human_input_node
-from ..tools import get_music_tools, get_invoice_tools
+from src.nodes.create_memory_node import create_memory
+from src.agents import MusicAgent, InvoiceAgent, SupervisorAgent
+from src.schemas.state import State
+from src.config.settings import Settings
+from src.memory.memory_manager import MemoryManager
+from src.utils.validation import should_interrupt
+from src.nodes.verify_info_node import verify_info_node
+from src.nodes.human_input_node import human_input_node
+from src.tools import get_music_tools, get_invoice_tools
+from src.llm.azure_openai import AzureOpenAI
 
 
 class MultiAgentWorkflow:
@@ -48,32 +46,18 @@ class MultiAgentWorkflow:
         else:
             self.memory_manager = MemoryManager()
 
-        # Initialize database
-        self.db = setup_database()
-
         # Initialize agents and components
         self._initialize_components()
 
     def _initialize_components(self):
         """Initialize LLM, agents, and other components."""
-        # Initialize LLM
-        self._initialize_llm()
+
+        # Initialize LLM using the singleton pattern
+        azure_openai = AzureOpenAI.get_instance(self.settings)
+        self.llm = azure_openai.llm
 
         # Initialize agents with appropriate tools
         self._initialize_agents()
-
-    def _initialize_llm(self):
-        """Initialize the LLM."""
-        self.llm = AzureChatOpenAI(
-            model_name=self.settings.model_name,
-            temperature=self.settings.temperature,
-            api_version=self.settings.api_version,
-            api_key=self.settings.azure_openai_api_key,
-            azure_endpoint=self.settings.azure_openai_base_url,
-        )
-
-        # Initialize structured LLM for parsing
-        self.structured_llm = self.llm.with_structured_output(schema=UserInput)
 
     def _initialize_agents(self):
         """Initialize all agents used in the workflow."""
@@ -82,8 +66,8 @@ class MultiAgentWorkflow:
         self.invoice_tools = get_invoice_tools()
 
         # Create specialized agents
-        self.music_agent = MusicAgent(self.llm, self.music_tools)
-        self.invoice_agent = InvoiceAgent(self.llm, self.invoice_tools)
+        self.music_agent = MusicAgent(self.llm, self.music_tools).music_agent
+        self.invoice_agent = InvoiceAgent(self.llm, self.invoice_tools).invoice_agent
 
         # Create supervisor agent with references to specialized agents
         self.supervisor_agent = SupervisorAgent(
@@ -92,13 +76,17 @@ class MultiAgentWorkflow:
             self.memory_manager,
         )
 
+    def _load_memory_node(self, state: State, config: RunnableConfig):
+        """Node function to load user memory from long-term storage."""
+        return self.memory_manager.load_user_memory(state)
+
     def _configure_workflow_nodes(self, workflow, supervisor_workflow):
         """Configure the nodes of the workflow graph."""
         workflow.add_node("verify_info", verify_info_node)
         workflow.add_node("human_input", human_input_node)
-        workflow.add_node("load_memory", LongTermMemory.load_memory)
+        workflow.add_node("load_memory", self._load_memory_node)
         workflow.add_node("supervisor", supervisor_workflow)
-        workflow.add_node("create_memory", LongTermMemory.save_memory)
+        workflow.add_node("create_memory", create_memory)
 
     def _configure_workflow_edges(self, workflow):
         """Configure the edges and flow of the workflow graph."""

@@ -27,18 +27,6 @@ class MemoryManager:
         """Get the store for long-term memory."""
         return self.long_term.get_store()
 
-    def save_user_memory(self, user_id: str, memory_data: dict):
-        """Save user memory to long-term storage."""
-        return self.long_term.save_memory(user_id, memory_data)
-
     def load_user_memory(self, state: State) -> dict:
         """Load user memory from long-term storage."""
         return self.long_term.load_memory(state)
-
-    def clear_conversation(self, thread_id: str):
-        """Clear short-term conversation memory."""
-        return self.short_term.clear_conversation(thread_id)
-
-    def clear_user_memory(self, user_id: str):
-        """Clear long-term user memory."""
-        return self.long_term.clear_memory(user_id)

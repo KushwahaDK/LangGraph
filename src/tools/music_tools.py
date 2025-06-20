@@ -1,9 +1,10 @@
 import ast
 from langchain_core.tools import tool
+from src.databases.database import db
 
 
 @tool
-def get_albums_by_artist(db, artist: str):
+def get_albums_by_artist(artist: str):
     """
     Get albums by an artist from the music database.
 
@@ -25,7 +26,7 @@ def get_albums_by_artist(db, artist: str):
 
 
 @tool
-def get_tracks_by_artist(db, artist: str):
+def get_tracks_by_artist(artist: str):
     """
     Get songs/tracks by an artist (or similar artists) from the music database.
 
@@ -48,7 +49,7 @@ def get_tracks_by_artist(db, artist: str):
 
 
 @tool
-def get_songs_by_genre(db, genre: str):
+def get_songs_by_genre(genre: str):
     """
     Fetch songs from the database that match a specific genre.
 
@@ -100,7 +101,7 @@ def get_songs_by_genre(db, genre: str):
 
 
 @tool
-def check_for_songs(db, song_title):
+def check_for_songs(song_title):
     """
     Check if a song exists in the database by its name.
 

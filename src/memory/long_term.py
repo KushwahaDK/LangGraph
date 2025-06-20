@@ -2,7 +2,7 @@
 
 from src.schemas.state import State
 from langgraph.store.memory import InMemoryStore
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 
 class LongTermMemory:
@@ -22,12 +22,6 @@ class LongTermMemory:
         """Create appropriate store based on type."""
         if store_type == "memory":
             return InMemoryStore()
-        elif store_type == "redis":
-            # TODO: Implement Redis store
-            raise NotImplementedError("Redis store not yet implemented")
-        elif store_type == "postgres":
-            # TODO: Implement PostgreSQL store
-            raise NotImplementedError("PostgreSQL store not yet implemented")
         else:
             raise ValueError(f"Unsupported store type: {store_type}")
 
@@ -35,32 +29,20 @@ class LongTermMemory:
         """Get the store instance."""
         return self._store
 
-    def save_memory(self, user_id: str, memory_data: Dict[str, Any]):
-        """
-        Save user memory to long-term storage.
-
-        Args:
-            user_id: User identifier
-            memory_data: Memory data to save
-        """
-        namespace = ("memory_profile", user_id)
-        key = "user_memory"
-        self._store.put(namespace, key, memory_data)
-
     def load_memory(self, state: State) -> dict:
         """
         Load user memory from long-term storage.
 
         Args:
-            state: State containing user_id
+            state: State containing customer_id
 
         Returns:
-            User memory data or None if not found
+            User memory data or empty string if not found
         """
-        user_id = state["user_id"]
+        customer_id = state["customer_id"]
 
         # Create a namespace for the user's memory
-        namespace = ("memory_profile", user_id)
+        namespace = ("memory_profile", customer_id)
 
         # Get the user memory from the store
         key = "user_memory"
@@ -69,22 +51,31 @@ class LongTermMemory:
         # If memory exists and has a value, format it using our helper function.
         if result and result.value:
             formatted_memory = self.format_user_memory(result.value)
+        else:
+            formatted_memory = ""
 
         # Update the `loaded_memory` field in the state with the retrieved and formatted memory.
         return {"loaded_memory": formatted_memory}
 
-    def clear_memory(self, user_id: str):
+    def save_memory(self, state: State) -> dict:
         """
-        Clear user memory from long-term storage.
+        Save user memory to long-term storage.
 
         Args:
-            user_id: User identifier
+            state: State containing customer_id
+
+        Returns:
+            User memory data or empty string if not found
+
         """
-        namespace = ("memory_profile", user_id)
+        # Get the customer_id from the state
+        customer_id = state["customer_id"]
+        namespace = ("memory_profile", customer_id)
         key = "user_memory"
-        # InMemoryStore doesn't have delete method, but this can be extended
-        # for other backends that support deletion
-        pass
+
+        # Save the user memory to the store
+        self._store.put(namespace, key, state["loaded_memory"])
+        return {"loaded_memory": state["loaded_memory"]}
 
     def format_user_memory(self, user_data: Dict[str, Any]) -> str:
         """

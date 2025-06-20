@@ -1,8 +1,10 @@
+from src.llm.azure_openai import AzureOpenAI
+from src.schemas.models import UserInput
 from src.schemas.state import State
 from langchain_core.messages import SystemMessage
-from src.utils.database import get_customer_id_from_identifier, setup_database
+from src.databases.database import get_customer_id_from_identifier, setup_database
 from langchain_core.runnables import RunnableConfig
-from ..config.prompts import SystemPrompts
+from src.config.prompts import SystemPrompts
 
 
 def verify_info_node(
@@ -28,8 +30,11 @@ def verify_info_node(
         # Get the most recent user message
         user_input = state["messages"][-1]
 
+        # Get the Azure OpenAI instance using the singleton pattern
+        azure_openai = AzureOpenAI.get_instance(config["settings"])
+
         # Use structured LLM to parse customer identifier from the message
-        parsed_info = config["configurable"]["structured_llm"].invoke(
+        parsed_info = azure_openai.get_structured_llm(UserInput).invoke(
             [SystemMessage(content=SystemPrompts.structured_extraction_prompt())]
             + [user_input]
         )
@@ -53,9 +58,9 @@ def verify_info_node(
             # Note that the return statements only contain keys that are part of the State schema
             return {"customer_id": customer_id, "messages": [intent_message]}
         else:
-            llm = config["configurable"]["llm"]
             # If customer not found, ask for correct information
-            response = llm.invoke(
+            # Reuse the same Azure OpenAI instance
+            response = azure_openai.llm.invoke(
                 [SystemMessage(content=SystemPrompts.verification_prompt())]
                 + state["messages"]
             )
@@ -63,4 +68,4 @@ def verify_info_node(
 
     else:
         # Customer already verified, no action needed
-        pass
+        {}
