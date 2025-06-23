@@ -9,7 +9,7 @@ from langgraph.types import Command
 # Import the template components
 from src.workflows import MultiAgentWorkflow
 from src.config.settings import Settings
-
+from src.databases.database import Database
 
 # Load environment variables
 load_dotenv(dotenv_path=".env", override=True)
@@ -44,6 +44,7 @@ def main():
         "configurable": {
             "thread_id": thread_id,
             "user_id": "Deepak",
+            "db": Database(),
         }
     }
 

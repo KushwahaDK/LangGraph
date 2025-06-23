@@ -4,7 +4,6 @@ from src.schemas.state import State
 from langchain_core.messages import SystemMessage
 from langchain_core.runnables import RunnableConfig
 from src.config.prompts import SystemPrompts
-from src.databases.database import Database
 
 
 class VerifyInfoNode:
@@ -16,17 +15,14 @@ class VerifyInfoNode:
     them against the database.
     """
 
-    def __init__(self, db: Database):
+    def __init__(self):
         """Initialize the VerifyInfoNode."""
-        self.db = db
-        self.azure_openai = None
-        self.structured_llm = None
+        pass
 
     def _initialize_llm(self, config: RunnableConfig):
         """Initialize the Azure OpenAI instance and structured LLM."""
-        if self.azure_openai is None:
-            self.azure_openai = AzureOpenAI.get_instance(config["settings"])
-            self.structured_llm = self.azure_openai.get_structured_llm(UserInput)
+        self.llm = AzureOpenAI.get_instance(config["settings"])
+        self.structured_llm = self.llm.get_structured_llm(UserInput)
 
     def _parse_customer_identifier(self, user_input) -> str:
         """
@@ -44,7 +40,7 @@ class VerifyInfoNode:
         )
         return parsed_info.identifier
 
-    def _verify_customer_identity(self, identifier: str):
+    def _verify_customer_identity(self, identifier: str, config: RunnableConfig):
         """
         Verify customer identity against database.
 
@@ -55,7 +51,7 @@ class VerifyInfoNode:
             Customer ID if found, empty string otherwise
         """
         if identifier:
-            return self.db.get_customer_id_from_identifier(identifier)
+            return config["db"].get_customer_id_from_identifier(identifier)
         return ""
 
     def _create_verification_success_response(self, customer_id) -> dict:
@@ -83,7 +79,7 @@ class VerifyInfoNode:
         Returns:
             dict: State update with error message requesting correct information
         """
-        response = self.azure_openai.llm.invoke(
+        response = self.llm.invoke(
             [SystemMessage(content=SystemPrompts.verification_prompt())]
             + state["messages"]
         )
@@ -112,7 +108,7 @@ class VerifyInfoNode:
             identifier = self._parse_customer_identifier(user_input)
 
             # Verify customer identity against database
-            customer_id = self._verify_customer_identity(identifier)
+            customer_id = self._verify_customer_identity(identifier, config)
 
             # Return appropriate response based on verification result
             if customer_id != "":

@@ -25,9 +25,6 @@ from src.tools import get_music_tools, get_invoice_tools
 # Import LLM
 from src.llm.azure_openai import AzureOpenAI
 
-# Import Databases
-from src.databases.database import Database
-
 # Import Validation
 from src.utils.validation import should_interrupt
 
@@ -67,9 +64,6 @@ class MultiAgentWorkflow:
     def _initialize_components(self):
         """Initialize LLM, agents, and other components."""
 
-        # Initialize the Database
-        self.db = Database()
-
         # Initialize LLM using the singleton pattern
         azure_openai = AzureOpenAI.get_instance(self.settings)
         self.llm = azure_openai.llm
@@ -80,14 +74,12 @@ class MultiAgentWorkflow:
     def _initialize_agents(self):
         """Initialize all agents used in the workflow."""
         # Get tool collections
-        self.music_tools = get_music_tools(self.db)
-        self.invoice_tools = get_invoice_tools(self.db)
+        self.music_tools = get_music_tools()
+        self.invoice_tools = get_invoice_tools()
 
         # Create specialized agents
-        self.music_agent = MusicAgent(self.llm, self.music_tools, self.db).music_agent
-        self.invoice_agent = InvoiceAgent(
-            self.llm, self.invoice_tools, self.db
-        ).invoice_agent
+        self.music_agent = MusicAgent(self.llm, self.music_tools).music_agent
+        self.invoice_agent = InvoiceAgent(self.llm, self.invoice_tools).invoice_agent
 
         # Create supervisor agent with references to specialized agents
         self.supervisor_agent = SupervisorAgent(
@@ -104,7 +96,7 @@ class MultiAgentWorkflow:
         """Configure the nodes of the workflow graph."""
 
         # Initialize the VerifyInfoNode
-        verify_info_node = VerifyInfoNode(self.db)
+        verify_info_node = VerifyInfoNode()
 
         # Add the VerifyInfoNode to the workflow
         workflow.add_node("verify_info", verify_info_node.execute)

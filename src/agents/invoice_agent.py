@@ -13,7 +13,7 @@ class InvoiceAgent:
     including customer purchase history and employee assistance details.
     """
 
-    def __init__(self, llm, tools=None, db=None):
+    def __init__(self, llm, tools=None):
         """
         Initialize the invoice agent.
 
@@ -24,7 +24,7 @@ class InvoiceAgent:
         self.name = "invoice_agent"
         self.description = "Handles invoice and billing information queries"
         self.llm = llm
-        self.tools = tools or get_invoice_tools(db)
+        self.tools = tools or get_invoice_tools()
         self.invoice_agent = self._create_react_agent()
 
     def _create_react_agent(self):
