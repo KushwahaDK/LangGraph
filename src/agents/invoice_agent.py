@@ -1,8 +1,8 @@
 """Invoice information agent for handling billing and invoice queries."""
 
-from ..schemas.state import State
-from ..config.prompts import SystemPrompts
-from ..tools import get_invoice_tools
+from src.schemas.state import State
+from src.config.prompts import SystemPrompts
+from src.tools import get_invoice_tools
 
 
 class InvoiceAgent:
@@ -13,7 +13,7 @@ class InvoiceAgent:
     including customer purchase history and employee assistance details.
     """
 
-    def __init__(self, llm, tools=None):
+    def __init__(self, llm, tools=None, db=None):
         """
         Initialize the invoice agent.
 
@@ -24,7 +24,7 @@ class InvoiceAgent:
         self.name = "invoice_agent"
         self.description = "Handles invoice and billing information queries"
         self.llm = llm
-        self.tools = tools or get_invoice_tools()
+        self.tools = tools or get_invoice_tools(db)
         self.invoice_agent = self._create_react_agent()
 
     def _create_react_agent(self):

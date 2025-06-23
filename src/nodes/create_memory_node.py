@@ -7,61 +7,107 @@ from src.schemas.models import UserProfile
 from src.llm.azure_openai import AzureOpenAI
 
 
-# This node is responsible for analyzing the conversation and saving/updating user music preferences.
-def create_memory(state: State, config: RunnableConfig, store: BaseStore) -> dict:
+class CreateMemoryNode:
     """
-    This node is responsible for analyzing the conversation and saving/updating user music preferences.
+    Node class for analyzing conversations and managing user memory profiles.
 
-    Args:
-        state: The current state of the conversation.
-        config: The configuration for the conversation.
-        store: The store for the conversation.
-    Returns:
-        The updated memory profile.
+    This node is responsible for extracting and updating user music preferences
+    from conversation history and storing them in long-term memory.
     """
-    # Get the customer ID from the current state (convert to string).
-    customer_id = str(state["customer_id"])
 
-    # Define the namespace for this user's memory profile.
-    namespace = (
-        "memory_profile",
-        customer_id,
-    )  # Define the namespace for this user's memory profile.
+    def __init__(self):
+        """Initialize the CreateMemoryNode."""
+        pass
 
-    # Get the existing memory profile for this user from the long-term store.
-    existing_memory = store.get(namespace, "user_memory")
+    def _initialize_llm(self, config: RunnableConfig):
+        """Initialize the Azure OpenAI instance."""
 
-    # Initialize formatted memory for the prompt.
-    formatted_memory = ""  # Initialize formatted memory for the prompt.
-    if existing_memory and existing_memory.value:
-        # Get the dictionary containing the UserProfile instance.
-        existing_memory_dict = (
-            existing_memory.value
-        )  # Get the dictionary containing the UserProfile instance.
-        # Format existing music preferences into a string for the prompt.
-        formatted_memory = f"Music Preferences: {', '.join(existing_memory_dict.get('memory').music_preferences or [])}"
+        self.llm = AzureOpenAI.get_instance(config["settings"])
+        self.structured_llm = self.llm.get_structured_llm(UserProfile)
 
-    # Create a SystemMessage with the formatted prompt, injecting the full conversation history and the existing memory profile.
-    formatted_system_message = SystemMessage(
-        content=SystemPrompts.memory_creation_prompt().format(
-            conversation=state["messages"], memory_profile=formatted_memory
+    def _get_existing_memory(self, store: BaseStore, customer_id: str) -> str:
+        """
+        Retrieve existing memory profile for the user.
+
+        Args:
+            store: The store for conversation data
+            customer_id: The customer ID
+
+        Returns:
+            str: Formatted memory string for prompt injection
+        """
+        namespace = ("memory_profile", customer_id)
+        existing_memory = store.get(namespace, "user_memory")
+
+        if existing_memory and existing_memory.value:
+            existing_memory_dict = existing_memory.value
+            music_preferences = (
+                existing_memory_dict.get("memory").music_preferences or []
+            )
+            return f"Music Preferences: {', '.join(music_preferences)}"
+
+        return ""
+
+    def _analyze_conversation(self, state: State, formatted_memory: str) -> UserProfile:
+        """
+        Analyze conversation using structured LLM to extract memory updates.
+
+        Args:
+            state: Current conversation state
+            formatted_memory: Existing memory profile as formatted string
+
+        Returns:
+            UserProfile: Updated memory profile
+        """
+        formatted_system_message = SystemMessage(
+            content=SystemPrompts.memory_creation_prompt().format(
+                conversation=state["messages"], memory_profile=formatted_memory
+            )
         )
-    )
 
-    # Get the Azure OpenAI instance using the singleton pattern
-    azure_openai = AzureOpenAI.get_instance(config["settings"])
+        return self.structured_llm.invoke([formatted_system_message])
 
-    # Invoke the LLM with structured output (`UserProfile`) to analyze the conversation and update the memory profile based on new information.
-    updated_memory = azure_openai.get_structured_llm(UserProfile).invoke(
-        [formatted_system_message]
-    )
+    def _store_memory(
+        self, store: BaseStore, customer_id: str, updated_memory: UserProfile
+    ):
+        """
+        Store the updated memory profile in long-term storage.
 
-    # Define the key for storing this specific memory object.
-    key = "user_memory"
+        Args:
+            store: The store for conversation data
+            customer_id: The customer ID
+            updated_memory: Updated UserProfile to store
+        """
+        namespace = ("memory_profile", customer_id)
+        key = "user_memory"
+        store.put(namespace, key, {"memory": updated_memory})
 
-    # Store the updated memory profile back into the `InMemoryStore`.
-    # We wrap `updated_memory` in a dictionary under the key 'memory' for consistency in access.
-    store.put(namespace, key, {"memory": updated_memory})
+    def execute(self, state: State, config: RunnableConfig, store: BaseStore) -> dict:
+        """
+        Analyze the conversation and save/update user music preferences.
 
-    # Return the updated memory profile.
-    return {"loaded_memory": updated_memory}
+        Args:
+            state: The current state of the conversation
+            config: The configuration for the conversation
+            store: The store for the conversation
+
+        Returns:
+            dict: The updated memory profile
+        """
+        # Initialize LLM components
+        self._initialize_llm(config)
+
+        # Get the customer ID from the current state
+        customer_id = str(state["customer_id"])
+
+        # Get existing memory profile for this user
+        formatted_memory = self._get_existing_memory(store, customer_id)
+
+        # Analyze conversation and extract updated memory
+        updated_memory = self._analyze_conversation(state, formatted_memory)
+
+        # Store the updated memory profile
+        self._store_memory(store, customer_id, updated_memory)
+
+        # Return the updated memory profile
+        return {"loaded_memory": updated_memory}

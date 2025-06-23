@@ -5,16 +5,31 @@ from langchain_core.runnables import RunnableConfig
 
 from langgraph.graph import StateGraph, START, END
 
-from src.nodes.create_memory_node import create_memory
+from src.nodes.create_memory_node import create_memory_node
+
+# Import Agents
 from src.agents import MusicAgent, InvoiceAgent, SupervisorAgent
+
+# Import Schemas
 from src.schemas.state import State
 from src.config.settings import Settings
+
+# Import Memory Manager
 from src.memory.memory_manager import MemoryManager
-from src.utils.validation import should_interrupt
-from src.nodes.verify_info_node import verify_info_node
-from src.nodes.human_input_node import human_input_node
+
+# Import Nodes
+from src.nodes.verify_info_node import VerifyInfoNode
+from src.nodes.human_input_node import HumanInputNode
 from src.tools import get_music_tools, get_invoice_tools
+
+# Import LLM
 from src.llm.azure_openai import AzureOpenAI
+
+# Import Databases
+from src.databases.database import Database
+
+# Import Validation
+from src.utils.validation import should_interrupt
 
 
 class MultiAgentWorkflow:
@@ -52,6 +67,9 @@ class MultiAgentWorkflow:
     def _initialize_components(self):
         """Initialize LLM, agents, and other components."""
 
+        # Initialize the Database
+        self.db = Database()
+
         # Initialize LLM using the singleton pattern
         azure_openai = AzureOpenAI.get_instance(self.settings)
         self.llm = azure_openai.llm
@@ -62,12 +80,14 @@ class MultiAgentWorkflow:
     def _initialize_agents(self):
         """Initialize all agents used in the workflow."""
         # Get tool collections
-        self.music_tools = get_music_tools()
-        self.invoice_tools = get_invoice_tools()
+        self.music_tools = get_music_tools(self.db)
+        self.invoice_tools = get_invoice_tools(self.db)
 
         # Create specialized agents
-        self.music_agent = MusicAgent(self.llm, self.music_tools).music_agent
-        self.invoice_agent = InvoiceAgent(self.llm, self.invoice_tools).invoice_agent
+        self.music_agent = MusicAgent(self.llm, self.music_tools, self.db).music_agent
+        self.invoice_agent = InvoiceAgent(
+            self.llm, self.invoice_tools, self.db
+        ).invoice_agent
 
         # Create supervisor agent with references to specialized agents
         self.supervisor_agent = SupervisorAgent(
@@ -82,11 +102,19 @@ class MultiAgentWorkflow:
 
     def _configure_workflow_nodes(self, workflow, supervisor_workflow):
         """Configure the nodes of the workflow graph."""
-        workflow.add_node("verify_info", verify_info_node)
-        workflow.add_node("human_input", human_input_node)
+
+        # Initialize the VerifyInfoNode
+        verify_info_node = VerifyInfoNode(self.db)
+
+        # Add the VerifyInfoNode to the workflow
+        workflow.add_node("verify_info", verify_info_node.execute)
+
+        # Add the other nodes to the workflow
+        human_input_node = HumanInputNode()
+        workflow.add_node("human_input", human_input_node.execute)
         workflow.add_node("load_memory", self._load_memory_node)
         workflow.add_node("supervisor", supervisor_workflow)
-        workflow.add_node("create_memory", create_memory)
+        workflow.add_node("create_memory", create_memory_node)
 
     def _configure_workflow_edges(self, workflow):
         """Configure the edges and flow of the workflow graph."""

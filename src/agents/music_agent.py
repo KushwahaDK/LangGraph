@@ -1,8 +1,8 @@
 """Music catalog agent for handling music-related queries."""
 
-from ..schemas.state import State
-from ..config.prompts import SystemPrompts
-from ..tools import get_music_tools
+from src.schemas.state import State
+from src.config.prompts import SystemPrompts
+from src.tools import get_music_tools
 
 
 class MusicAgent:
@@ -13,7 +13,7 @@ class MusicAgent:
     music recommendations based on customer preferences.
     """
 
-    def __init__(self, llm, tools=None):
+    def __init__(self, llm, tools=None, db=None):
         """
         Initialize the music agent.
 
@@ -24,7 +24,7 @@ class MusicAgent:
         self.name = "music_agent"
         self.description = "Handles music catalog queries and recommendations"
         self.llm = llm
-        self.tools = tools or get_music_tools()
+        self.tools = tools or get_music_tools(db)
         self.music_agent = self._create_react_agent()
 
     def _create_react_agent(self):
